@@ -61,7 +61,8 @@ function loadHistory() {
         const tr = document.createElement('tr');
         
         const dateObj = new Date(row.Date);
-        const displayDate = isNaN(dateObj) ? row.Date : (dateObj.getMonth() + 1) + '/' + dateObj.getDate();
+       const displayDate = isNaN(dateObj) ? row.Date : (dateObj.getMonth() + 1) + '/' + dateObj.getDate() + '/' + dateObj.getFullYear().toString().slice(-2);
+
   
         tr.innerHTML = `
           <td style="font-weight:bold;">${displayDate}</td>
