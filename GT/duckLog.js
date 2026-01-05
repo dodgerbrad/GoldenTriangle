@@ -104,6 +104,7 @@ function loadHistory() {
         <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalDucks}</td>
         <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalGeese}</td>
         <td></td>
+        <td></td>
       `;
       historyBody.appendChild(totalRow);
     })
