@@ -23,17 +23,17 @@
             "sizes": "1080x1920",
             "type": "image/png",
             "form_factor": "narrow",
-            "label": "Bracket Draft in action"
+            "label": "Hunting Log in action"
         },
         {
             "src": "screenshot-desktop.png",
             "sizes": "1920x1080",
             "type": "image/png",
             "form_factor": "wide",
-            "label": "Bracket Draft on desktop"
+            "label": "Hunting Log on desktop"
         }
     ],
-    "description": "The ultimate tool for drafting and tracking your 2026 NCAA tournament brackets with friends."
+    "description": "Hunting Log App."
     
 
 
