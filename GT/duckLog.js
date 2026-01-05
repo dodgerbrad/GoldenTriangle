@@ -88,6 +88,7 @@ function loadHistory() {
           <td>${row.blindLocation || 'N/A'}</td>
           <td style="text-align:center;">${row.ducks || 0}</td>
           <td style="text-align:center;">${row.geese || 0}</td>
+          <td class="notes-cell">${row.weather || ''}</td>
           <td class="notes-cell">${row.notes || ''}</td>
         `;
         historyBody.appendChild(tr);
