@@ -113,6 +113,23 @@ function loadHistory() {
       historyBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ff793f;">Failed to load logs.</td></tr>';
     });
   }
+// Automatically refresh data when the app is resumed
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        console.log("App resumed: Refreshing logs...");
+        loadHistory(); // Call your function that fetches the table data
+    }
+});
+
+// Set the date input to 'Today' by default for faster entry
+window.onload = () => {
+    const dateInput = document.getElementById('huntDate');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    loadHistory();
+};
+
   
  
   
