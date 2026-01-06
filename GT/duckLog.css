@@ -7,6 +7,31 @@
     --border-soft: #2d3c59;   /* Subtle blue-gray borders */
     --input-bg: #213448;      /* Deep blue for input fields */
 }
+/* Enables native pull-to-refresh behavior */
+html, body {
+    overscroll-behavior-y: contain; 
+    /* Prevents the 'rubber band' effect on the whole page 
+       while allowing the refresh gesture at the top. */
+    
+    /* Optimized for the iPhone Notch / Dynamic Island */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Hide scrollbars but keep functionality for a cleaner app look */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* App-style container */
+#box {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
 
 /* --- 2. Global Mobile & iOS Fixes --- */
 body {
