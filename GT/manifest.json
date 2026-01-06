@@ -1,44 +1,21 @@
 {
-    "name": "GT Bird Log",
-    "short_name": "GT",
-    "start_url": "index.html",
-    "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#003366",
-    "icons": [
-        {
-            "src": "GT.png",
-            "sizes": "192x192",
-            "type": "image/png"
-            "purpose": "any maskable"
-          },
-          {
-            "src": "GT.png",
-            "sizes": "512x512",
-            "type": "image/png"
-            "purpose": "maskable"
-          }
-    ],
-    "screenshots": [
-        {
-            "src": "screenshot-mobile.png",
-            "sizes": "1080x1920",
-            "type": "image/png",
-            "form_factor": "narrow",
-            "label": "Hunting Log in action"
-        },
-        {
-            "src": "screenshot-desktop.png",
-            "sizes": "1920x1080",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "Hunting Log on desktop"
-        }
-    ],
-    "description": "Hunting Log App."
-    
-
-
-
-
+  "name": "GT Hunt Log",
+  "short_name": "Hunt Log",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2c3e50",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "GT.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "GT-apple-touch.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
