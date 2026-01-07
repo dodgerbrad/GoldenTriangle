@@ -184,16 +184,4 @@ tbody tr:nth-child(even) {
     font-size: 12px;
 }
 
-.notes-cell {
-    max-width: 150px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.85rem;
-}
 
-/* On tap/click, show the full note */
-.notes-cell:active {
-    white-space: normal;
-    overflow: visible;
-}
