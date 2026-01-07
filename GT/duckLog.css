@@ -102,12 +102,7 @@ input:invalid, select:invalid {
     background-color: rgba(255, 121, 63, 0.1);
 }
 
-/* Adds a small 'required' indicator text in the corner of the field */
-select:invalid::before {
-    content: " (Required)";
-    color: var(--safety-orange);
-    font-size: 0.8rem;
-}
+
 
 .input-row input { width: 80px; text-align: center; margin-bottom: 0; }
 
