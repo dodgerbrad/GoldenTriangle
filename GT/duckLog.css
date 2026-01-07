@@ -202,14 +202,34 @@ tbody tr:nth-child(even) {
 /* 2026 Mobile Fix: Ensure expanded cells sit on top of other rows */
 .expandable-cell.expanded {
     white-space: normal;
-    overflow: visible;
-    background: var(--input-bg); /* Use your existing deep blue */
-    position: absolute; /* Changed from relative to absolute to 'pop' out */
-    z-index: 100;
-    width: 250px; /* Slightly wider for better reading on phones */
-    border: 1px solid var(--safety-orange);
-    box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+    overflow-y: auto; /* Adds scrolling if the note is very long */
+    background-color: var(--input-bg);
+    border: 2px solid var(--safety-orange);
+    color: #fff;
+    
+    position: absolute;
+    /* Centers the popup relative to the cell tapped */
+    left: 50%;
+    transform: translateX(-50%);
+    
+    width: 280px; 
+    max-width: 90vw; /* Never wider than 90% of the screen */
+    max-height: 200px; /* Prevents giant notes from covering the whole screen */
+    
+    z-index: 9999;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+    
+    /* Smooth entrance */
+    animation: popIn 0.2s ease-out;
 }
+
+@keyframes popIn {
+    from { opacity: 0; transform: translateX(-50%) scale(0.9); }
+    to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
 
 /* Ensure the table cell doesn't collapse when the content goes absolute */
 td.expandable-cell {
