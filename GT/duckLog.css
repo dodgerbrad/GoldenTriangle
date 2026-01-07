@@ -87,6 +87,15 @@ input, select, textarea {
     align-items: center;
     margin-bottom: 10px;
 }
+/* Highlights required fields that are empty upon submission attempt */
+input:invalid, select:invalid {
+    border-left: 4px solid var(--safety-orange);
+}
+
+/* Optional: Subtle glow when the user is warned */
+input:invalid:focus, select:invalid:focus {
+    box-shadow: 0 0 8px rgba(255, 121, 63, 0.4);
+}
 
 .input-row input { width: 80px; text-align: center; margin-bottom: 0; }
 
