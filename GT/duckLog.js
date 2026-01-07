@@ -3,6 +3,11 @@ const form = document.getElementById('huntForm');
 const submitButton = document.querySelector('.btn-submit');
 
 form.addEventListener('submit', e => {
+   // 1. Check if the form is actually valid (checks 'required' fields)
+  if (!form.checkValidity()) {
+    // If not valid, let the browser show its built-in warnings
+    return; 
+  }
   e.preventDefault();
 
   // 1. Capture form data into our unused const
