@@ -166,18 +166,24 @@ function renderTable(hunts, filterValue) {
       // Ensure robust date display
       const displayDate = formatDateForDisplay(row.huntDate);
 
-      tr.innerHTML = `
-        <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
-        <td>${row.blindLocation || 'N/A'}</td>
-        <td style="text-align:center;">${row.ducks || 0}</td>
-        <td style="text-align:center;">${row.geese || 0}</td>
-        <td class="notes-cell">${row.weather || ''}</td>
-        <td class="notes-cell">${row.notes || ''}</td>
-      `;
-// Add the 2026 "Tap to Expand" logic for phones
+tr.innerHTML = `
+    <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
+    <td>${row.blindLocation || 'N/A'}</td>
+    <td style="text-align:center;">${row.ducks || 0}</td>
+    <td style="text-align:center;">${row.geese || 0}</td>
+    <td class="expandable-cell">${row.weather || ''}</td>
+    <td class="expandable-cell">${row.notes || ''}</td>
+`;
+
+// Crucial: This part attaches the 'tap' logic to the class you just created
 tr.querySelectorAll('.expandable-cell').forEach(cell => {
-    cell.addEventListener('click', function() {
+    cell.addEventListener('click', function(e) {
+        // Toggle this cell
         this.classList.toggle('expanded');
+        // Optional: Close other expanded cells when opening a new one
+        document.querySelectorAll('.expandable-cell.expanded').forEach(other => {
+            if (other !== this) other.classList.remove('expanded');
+        });
     });
 });
 
