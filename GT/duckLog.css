@@ -204,34 +204,41 @@ tbody tr:nth-child(even) {
 }
 
 /* --- THE POP-UP FIX FOR SAFARI 26 --- */
+/* 2026 Safari PWA Fix: Force pop-up to center of the viewport */
 .expandable-cell.expanded {
     white-space: normal;
     overflow-y: auto;
     
-    /* 2026 GPU Force: Forces Safari to 'paint' the pixels on a high layer */
-    display: block;
-    position: absolute;
-    z-index: 99999;
+    /* 2026 Standard: Break out of table constraints entirely */
+    position: fixed; 
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Perfectly centers it on the screen */
+    
+    width: 280px;
+    max-width: 85vw;
+    max-height: 50vh; /* Prevents it from being too tall */
     
     background-color: var(--input-bg);
-    border: 2px solid var(--safety-orange);
+    border: 3px solid var(--safety-orange);
     color: #fff;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7); /* Dims the table behind the note */
     
-    /* Centering logic that Safari 26 respects */
-    left: 50%;
-    -webkit-transform: translate3d(-50%, 0, 0);
-    transform: translate3d(-50%, 0, 0);
-    
-    width: 260px;
-    max-width: 85vw;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-    
-    /* Force visibility */
+    z-index: 10000; /* Stays above everything */
     opacity: 1 !important;
     visibility: visible !important;
+    
+    /* Smooth animation for 2026 mobile hardware */
+    animation: duckPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
+@keyframes duckPop {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
 
 /* Totals Row Styling */
 .total-row {
