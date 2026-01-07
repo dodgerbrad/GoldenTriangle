@@ -22,14 +22,22 @@ form.addEventListener('submit', e => {
   // Simple formatting for the immediate display
   const displayDate = newEntry.huntDate.split('-').slice(1).join('/') + '/' + newEntry.huntDate.split('-')[0].slice(-2);
 
-  tempRow.innerHTML = `
-      <td style="font-weight:bold; color:#f6f0d7;">${displayDate} (Pending...)</td>
-      <td>${newEntry.blindLocation}</td>
-      <td style="text-align:center;">${newEntry.ducks}</td>
-      <td style="text-align:center;">${newEntry.geese}</td>
-      <td class="notes-cell">${newEntry.weather}</td>
-      <td class="notes-cell">${newEntry.notes}</td>
-  `;
+ tempRow.innerHTML = `
+    <td style="font-weight:bold; color:#f6f0d7;">${displayDate} (Pending...)</td>
+    <td>${newEntry.blindLocation}</td>
+    <td style="text-align:center;">${newEntry.ducks}</td>
+    <td style="text-align:center;">${newEntry.geese}</td>
+    <!-- Use expandable-cell class and void(0) hack for Safari 2026 -->
+    <td class="expandable-cell" onclick="void(0)">${newEntry.weather}</td>
+    <td class="expandable-cell" onclick="void(0)">${newEntry.notes}</td>
+`;
+
+  // IMPORTANT: You must also attach the click listener to these new cells
+tempRow.querySelectorAll('.expandable-cell').forEach(cell => {
+    cell.addEventListener('click', function() {
+        this.classList.toggle('expanded');
+    });
+});
 
   // Insert at the top of the history
   historyBody.prepend(tempRow);
@@ -179,14 +187,14 @@ function renderTable(hunts, filterValue) {
         }
 
         // Build Row Structure
-        tr.innerHTML = `
-            <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
-            <td>${row.blindLocation || 'N/A'}</td>
-            <td style="text-align:center;">${row.ducks || 0}</td>
-            <td style="text-align:center;">${row.geese || 0}</td>
-            <td class="expandable-cell" role="button">${row.weather || ''}</td>
-            <td class="expandable-cell" role="button">${row.notes || ''}</td>
-        `;
+     tr.innerHTML = `
+    <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
+    <td>${row.blindLocation || 'N/A'}</td>
+    <td style="text-align:center;">${row.ducks || 0}</td>
+    <td style="text-align:center;">${row.geese || 0}</td>
+    <td class="expandable-cell" onclick="void(0)">${row.weather || ''}</td>
+    <td class="expandable-cell" onclick="void(0)">${row.notes || ''}</td>
+`;
 
         // 4. Attach "Smart Flip" Tap Logic to expandable cells
         tr.querySelectorAll('.expandable-cell').forEach(cell => {
