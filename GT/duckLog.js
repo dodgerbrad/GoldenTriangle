@@ -174,6 +174,10 @@ function renderTable(hunts, filterValue) {
         <td class="notes-cell">${row.weather || ''}</td>
         <td class="notes-cell">${row.notes || ''}</td>
       `;
+    // Add tap-to-expand functionality
+tr.querySelector('.notes-cell').addEventListener('click', function() {
+    this.classList.toggle('expanded');
+});
       fragment.appendChild(tr);
   });
 
