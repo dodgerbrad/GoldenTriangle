@@ -184,33 +184,16 @@ tbody tr:nth-child(even) {
     font-size: 12px;
 }
 
-/* 1. Ensure the table layout is fixed so max-width is respected */
-#historyTable {
-    table-layout: fixed;
-    width: 100%;
-}
-
 .notes-cell {
     max-width: 150px;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Adds the "..." */
+    text-overflow: ellipsis;
     font-size: 0.85rem;
-    cursor: pointer;
-    /* 2026 touch target optimization */
-    touch-action: manipulation;
 }
 
-/* 2. New "expanded" class for a persistent toggle */
-.notes-cell.expanded {
+/* On tap/click, show the full note */
+.notes-cell:active {
     white-space: normal;
     overflow: visible;
-    word-break: break-word;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 10;
-    position: relative;
-    padding: 15px !important;
 }
-
-
-
