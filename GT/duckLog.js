@@ -136,75 +136,106 @@ function updateSeasonDropdown(hunts) {
 
 
 // 3. New renderTable: Handles filtering and totals
+/**
+ * Renders the hunt history table with filtering and smart-popup logic.
+ * Optimized for mobile field use in 2026.
+ */
 function renderTable(hunts, filterValue) {
-  const historyBody = document.getElementById('historyBody');
-  
-  // 1. CLEAR: Wipe the table
-  historyBody.innerHTML = '';
-  
-  // 2. FILTER: Get the subset of data
-  const filteredData = (filterValue === 'all') 
-      ? hunts 
-      : hunts.filter(h => getSeason(h.huntDate) === filterValue);
+    const historyBody = document.getElementById('historyBody');
+    
+    // 1. Clear current table content
+    historyBody.innerHTML = '';
+    
+    // 2. Filter data based on selected season
+    const filteredData = (filterValue === 'all') 
+        ? hunts 
+        : hunts.filter(h => getSeason(h.huntDate) === filterValue);
 
-  if (filteredData.length === 0) {
-      historyBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No hunts found.</td></tr>';
-      return;
-  }
+    if (filteredData.length === 0) {
+        historyBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No hunts found for this selection.</td></tr>';
+        return;
+    }
 
-  // 3. FRAGMENT: Create a "virtual" container (2026 Best Practice)
-  const fragment = document.createDocumentFragment();
-  let totalDucks = 0;
-  let totalGeese = 0;
+    // 3. Use a DocumentFragment for high-speed rendering (2026 Best Practice)
+    const fragment = document.createDocumentFragment();
+    let totalDucks = 0;
+    let totalGeese = 0;
 
-  filteredData.forEach(row => {
-      totalDucks += parseInt(row.ducks || 0);
-      totalGeese += parseInt(row.geese || 0);
+    filteredData.forEach(row => {
+        totalDucks += parseInt(row.ducks || 0);
+        totalGeese += parseInt(row.geese || 0);
 
-      const tr = document.createElement('tr');
-      
-      // Ensure robust date display
-      const displayDate = formatDateForDisplay(row.huntDate);
+        const tr = document.createElement('tr');
+        
+        // Robust Date Formatting for display
+        let displayDate = "N/A";
+        if (row.huntDate) {
+            const parts = row.huntDate.toString().split('T')[0].split('-');
+            if (parts.length === 3) {
+                displayDate = `${parseInt(parts[1])}/${parseInt(parts[2])}/${parts[0].slice(-2)}`;
+            } else {
+                displayDate = row.huntDate;
+            }
+        }
 
-tr.innerHTML = `
-    <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
-    <td>${row.blindLocation || 'N/A'}</td>
-    <td style="text-align:center;">${row.ducks || 0}</td>
-    <td style="text-align:center;">${row.geese || 0}</td>
-    <td class="expandable-cell">${row.weather || ''}</td>
-    <td class="expandable-cell">${row.notes || ''}</td>
-`;
+        // Build Row Structure
+        tr.innerHTML = `
+            <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
+            <td>${row.blindLocation || 'N/A'}</td>
+            <td style="text-align:center;">${row.ducks || 0}</td>
+            <td style="text-align:center;">${row.geese || 0}</td>
+            <td class="expandable-cell" role="button">${row.weather || ''}</td>
+            <td class="expandable-cell" role="button">${row.notes || ''}</td>
+        `;
 
-// Crucial: This part attaches the 'tap' logic to the class you just created
-tr.querySelectorAll('.expandable-cell').forEach(cell => {
-    cell.addEventListener('click', function(e) {
-        // Toggle this cell
-        this.classList.toggle('expanded');
-        // Optional: Close other expanded cells when opening a new one
-        document.querySelectorAll('.expandable-cell.expanded').forEach(other => {
-            if (other !== this) other.classList.remove('expanded');
+        // 4. Attach "Smart Flip" Tap Logic to expandable cells
+        tr.querySelectorAll('.expandable-cell').forEach(cell => {
+            cell.addEventListener('click', function(e) {
+                const isExpanding = !this.classList.contains('expanded');
+
+                // Close any other open notes first to prevent overlaps
+                document.querySelectorAll('.expandable-cell.expanded').forEach(other => {
+                    other.classList.remove('expanded');
+                    other.style.top = ''; 
+                    other.style.bottom = '';
+                });
+
+                if (isExpanding) {
+                    this.classList.add('expanded');
+
+                    // Check if row is near the bottom of the phone screen
+                    const rect = this.getBoundingClientRect();
+                    const screenHeight = window.innerHeight;
+
+                    // If tap is in bottom 30% of screen, pop the note UPWARD
+                    if (rect.bottom > screenHeight * 0.7) {
+                        this.style.top = 'auto';
+                        this.style.bottom = '100%'; 
+                    } else {
+                        this.style.top = '100%'; 
+                        this.style.bottom = 'auto';
+                    }
+                }
+            });
         });
+
+        fragment.appendChild(tr);
     });
-});
 
-      fragment.appendChild(tr);
-  });
+    // 5. Append Season Totals Row
+    const label = (filterValue === 'all') ? "GRAND TOTAL:" : `${filterValue} TOTALS:`;
+    const totalRow = document.createElement('tr');
+    totalRow.className = 'total-row'; 
+    totalRow.innerHTML = `
+        <td colspan="2" style="text-align:right; font-weight:bold; color:var(--camo-accent);">${label}</td>
+        <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalDucks}</td>
+        <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalGeese}</td>
+        <td></td><td></td>
+    `;
+    fragment.appendChild(totalRow);
 
-  // 4. TOTALS: Add the season summary row
-  const totalRow = document.createElement('tr');
-  totalRow.className = 'total-row'; 
-  totalRow.innerHTML = `
-      <td colspan="2" style="text-align:right; font-weight:bold; color:var(--camo-accent);">
-        ${filterValue === 'all' ? "GRAND TOTAL" : filterValue + " TOTALS"}:
-      </td>
-      <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalDucks}</td>
-      <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalGeese}</td>
-      <td></td><td></td>
-  `;
-  fragment.appendChild(totalRow);
-
-  // 5. INJECT: Add everything to the screen in ONE go (Fastest)
-  historyBody.appendChild(fragment);
+    // 6. Final paint to the screen
+    historyBody.appendChild(fragment);
 }
 
 // Separate helper for clean code
