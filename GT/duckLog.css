@@ -103,7 +103,7 @@ input:invalid, select:invalid {
 }
 
 /* Adds a small 'required' indicator text in the corner of the field */
-select:invalid + label::after {
+select:invalid + label::before {
     content: " (Required)";
     color: var(--safety-orange);
     font-size: 0.8rem;
