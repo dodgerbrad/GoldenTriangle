@@ -197,21 +197,16 @@ function renderTable(hunts, filterValue) {
 `;
 
         // 4. Attach "Smart Flip" Tap Logic to expandable cells
-      tr.querySelectorAll('.expandable-cell').forEach(cell => {
-    cell.addEventListener('click', function(e) {
-        // If already expanded, just close it
-        if (this.classList.contains('expanded')) {
-            this.classList.remove('expanded');
-            return;
-        }
-
-        // Close any other notes first
-        document.querySelectorAll('.expandable-cell.expanded').forEach(other => {
-            other.classList.remove('expanded');
-        });
-
-        // Open this note
-        this.classList.add('expanded');
+  tr.querySelectorAll('.expandable-cell').forEach(cell => {
+    cell.addEventListener('click', function() {
+        const modal = document.getElementById('noteModal');
+        const content = document.getElementById('modalContent');
+        
+        // Put the weather/note text into the modal
+        content.innerText = this.innerText;
+        
+        // Open it as a native modal (Safari-safe)
+        modal.showModal();
     });
 });
 
