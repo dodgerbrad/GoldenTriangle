@@ -197,35 +197,23 @@ function renderTable(hunts, filterValue) {
 `;
 
         // 4. Attach "Smart Flip" Tap Logic to expandable cells
-        tr.querySelectorAll('.expandable-cell').forEach(cell => {
-            cell.addEventListener('click', function(e) {
-                const isExpanding = !this.classList.contains('expanded');
+      tr.querySelectorAll('.expandable-cell').forEach(cell => {
+    cell.addEventListener('click', function(e) {
+        // If already expanded, just close it
+        if (this.classList.contains('expanded')) {
+            this.classList.remove('expanded');
+            return;
+        }
 
-                // Close any other open notes first to prevent overlaps
-                document.querySelectorAll('.expandable-cell.expanded').forEach(other => {
-                    other.classList.remove('expanded');
-                    other.style.top = ''; 
-                    other.style.bottom = '';
-                });
-
-                if (isExpanding) {
-                    this.classList.add('expanded');
-
-                    // Check if row is near the bottom of the phone screen
-                    const rect = this.getBoundingClientRect();
-                    const screenHeight = window.innerHeight;
-
-                    // If tap is in bottom 30% of screen, pop the note UPWARD
-                    if (rect.bottom > screenHeight * 0.7) {
-                        this.style.top = 'auto';
-                        this.style.bottom = '100%'; 
-                    } else {
-                        this.style.top = '100%'; 
-                        this.style.bottom = 'auto';
-                    }
-                }
-            });
+        // Close any other notes first
+        document.querySelectorAll('.expandable-cell.expanded').forEach(other => {
+            other.classList.remove('expanded');
         });
+
+        // Open this note
+        this.classList.add('expanded');
+    });
+});
 
         fragment.appendChild(tr);
     });
