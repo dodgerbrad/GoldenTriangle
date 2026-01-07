@@ -174,10 +174,13 @@ function renderTable(hunts, filterValue) {
         <td class="notes-cell">${row.weather || ''}</td>
         <td class="notes-cell">${row.notes || ''}</td>
       `;
-    // Add tap-to-expand functionality
-tr.querySelector('.notes-cell').addEventListener('click', function() {
-    this.classList.toggle('expanded');
+// Add the 2026 "Tap to Expand" logic for phones
+tr.querySelectorAll('.expandable-cell').forEach(cell => {
+    cell.addEventListener('click', function() {
+        this.classList.toggle('expanded');
+    });
 });
+
       fragment.appendChild(tr);
   });
 
