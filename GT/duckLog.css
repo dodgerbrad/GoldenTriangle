@@ -248,3 +248,35 @@ tbody tr:nth-child(even) {
 .total-row td {
     padding: 15px 5px !important;
 }
+
+dialog {
+    border: 2px solid var(--safety-orange);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 85vw;
+    width: 300px;
+    /* Centers it regardless of scroll or notch */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Dim the background behind the popup */
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(3px);
+}
+
+.btn-close {
+    width: 100%;
+    margin-top: 15px;
+    padding: 10px;
+    background: var(--safety-orange);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+}
+
