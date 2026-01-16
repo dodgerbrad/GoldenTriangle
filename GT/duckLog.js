@@ -3,11 +3,6 @@ const form = document.getElementById('huntForm');
 const submitButton = document.querySelector('.btn-submit');
 
 form.addEventListener('submit', e => {
-   // 1. Check if the form is actually valid (checks 'required' fields)
-  if (!form.checkValidity()) {
-    // If not valid, let the browser show its built-in warnings
-    return; 
-  }
   e.preventDefault();
 
   // 1. Capture form data into our unused const
@@ -27,22 +22,14 @@ form.addEventListener('submit', e => {
   // Simple formatting for the immediate display
   const displayDate = newEntry.huntDate.split('-').slice(1).join('/') + '/' + newEntry.huntDate.split('-')[0].slice(-2);
 
- tempRow.innerHTML = `
-    <td style="font-weight:bold; color:#f6f0d7;">${displayDate} (Pending...)</td>
-    <td>${newEntry.blindLocation}</td>
-    <td style="text-align:center;">${newEntry.ducks}</td>
-    <td style="text-align:center;">${newEntry.geese}</td>
-    <!-- Use expandable-cell class and void(0) hack for Safari 2026 -->
-    <td class="expandable-cell" onclick="void(0)">${newEntry.weather}</td>
-    <td class="expandable-cell" onclick="void(0)">${newEntry.notes}</td>
-`;
-
-  // IMPORTANT: You must also attach the click listener to these new cells
-tempRow.querySelectorAll('.expandable-cell').forEach(cell => {
-    cell.addEventListener('click', function() {
-        this.classList.toggle('expanded');
-    });
-});
+  tempRow.innerHTML = `
+      <td style="font-weight:bold; color:#f6f0d7;">${displayDate} (Pending...)</td>
+      <td>${newEntry.blindLocation}</td>
+      <td style="text-align:center;">${newEntry.ducks}</td>
+      <td style="text-align:center;">${newEntry.geese}</td>
+      <td class="notes-cell">${newEntry.weather}</td>
+      <td class="notes-cell">${newEntry.notes}</td>
+  `;
 
   // Insert at the top of the history
   historyBody.prepend(tempRow);
@@ -89,6 +76,9 @@ function loadHistory() {
       const filter = document.getElementById('seasonFilter');
       const seasons = [...new Set(allHunts.map(h => getSeason(h.huntDate)))];
       
+      // Calculate current season string (e.g., "2025-2026")
+      const currentSeason = getSeason(new Date().toISOString());
+
       // Rebuild the menu
       let options = '<option value="all">All Time (Grand Total)</option>';
       seasons.sort().reverse().forEach(s => {
@@ -97,6 +87,14 @@ function loadHistory() {
           }
       });
       filter.innerHTML = options;
+      
+       // --- THE FIX: Set dropdown to current season if it exists in data ---
+       if (seasons.includes(currentSeason)) {
+        filter.value = currentSeason;
+    } else {
+        // Fallback to the most recent season available if current has no data yet
+        filter.value = seasons.sort().reverse()[0] || "all";
+    }
   
       renderTable(allHunts, filter.value);
   })
@@ -149,89 +147,62 @@ function updateSeasonDropdown(hunts) {
 
 
 // 3. New renderTable: Handles filtering and totals
-/**
- * Renders the hunt history table with filtering and smart-popup logic.
- * Optimized for mobile field use in 2026.
- */
 function renderTable(hunts, filterValue) {
-    const historyBody = document.getElementById('historyBody');
-    
-    // 1. Clear current table content
-    historyBody.innerHTML = '';
-    
-    // 2. Filter data based on selected season
-    const filteredData = (filterValue === 'all') 
-        ? hunts 
-        : hunts.filter(h => getSeason(h.huntDate) === filterValue);
+  const historyBody = document.getElementById('historyBody');
+  
+  // 1. CLEAR: Wipe the table
+  historyBody.innerHTML = '';
+  
+  // 2. FILTER: Get the subset of data
+  const filteredData = (filterValue === 'all') 
+      ? hunts 
+      : hunts.filter(h => getSeason(h.huntDate) === filterValue);
 
-    if (filteredData.length === 0) {
-        historyBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No hunts found for this selection.</td></tr>';
-        return;
-    }
+  if (filteredData.length === 0) {
+      historyBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No hunts found.</td></tr>';
+      return;
+  }
 
-    // 3. Use a DocumentFragment for high-speed rendering (2026 Best Practice)
-    const fragment = document.createDocumentFragment();
-    let totalDucks = 0;
-    let totalGeese = 0;
+  // 3. FRAGMENT: Create a "virtual" container (2026 Best Practice)
+  const fragment = document.createDocumentFragment();
+  let totalDucks = 0;
+  let totalGeese = 0;
 
-    filteredData.forEach(row => {
-        totalDucks += parseInt(row.ducks || 0);
-        totalGeese += parseInt(row.geese || 0);
+  filteredData.forEach(row => {
+      totalDucks += parseInt(row.ducks || 0);
+      totalGeese += parseInt(row.geese || 0);
 
-        const tr = document.createElement('tr');
-        
-        // Robust Date Formatting for display
-        let displayDate = "N/A";
-        if (row.huntDate) {
-            const parts = row.huntDate.toString().split('T')[0].split('-');
-            if (parts.length === 3) {
-                displayDate = `${parseInt(parts[1])}/${parseInt(parts[2])}/${parts[0].slice(-2)}`;
-            } else {
-                displayDate = row.huntDate;
-            }
-        }
+      const tr = document.createElement('tr');
+      
+      // Ensure robust date display
+      const displayDate = formatDateForDisplay(row.huntDate);
 
-        // Build Row Structure
-     tr.innerHTML = `
-    <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
-    <td>${row.blindLocation || 'N/A'}</td>
-    <td style="text-align:center;">${row.ducks || 0}</td>
-    <td style="text-align:center;">${row.geese || 0}</td>
-    <td class="expandable-cell" onclick="void(0)">${row.weather || ''}</td>
-    <td class="expandable-cell" onclick="void(0)">${row.notes || ''}</td>
-`;
+      tr.innerHTML = `
+        <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
+        <td>${row.blindLocation || 'N/A'}</td>
+        <td style="text-align:center;">${row.ducks || 0}</td>
+        <td style="text-align:center;">${row.geese || 0}</td>
+        <td class="notes-cell">${row.weather || ''}</td>
+        <td class="notes-cell">${row.notes || ''}</td>
+      `;
+      fragment.appendChild(tr);
+  });
 
-        // 4. Attach "Smart Flip" Tap Logic to expandable cells
-  tr.querySelectorAll('.expandable-cell').forEach(cell => {
-    cell.addEventListener('click', function() {
-        const modal = document.getElementById('noteModal');
-        const content = document.getElementById('modalContent');
-        
-        // Put the weather/note text into the modal
-        content.innerText = this.innerText;
-        
-        // Open it as a native modal (Safari-safe)
-        modal.showModal();
-    });
-});
+  // 4. TOTALS: Add the season summary row
+  const totalRow = document.createElement('tr');
+  totalRow.className = 'total-row'; 
+  totalRow.innerHTML = `
+      <td colspan="2" style="text-align:right; font-weight:bold; color:var(--camo-accent);">
+        ${filterValue === 'all' ? "GRAND TOTAL" : filterValue + " TOTALS"}:
+      </td>
+      <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalDucks}</td>
+      <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalGeese}</td>
+      <td></td><td></td>
+  `;
+  fragment.appendChild(totalRow);
 
-        fragment.appendChild(tr);
-    });
-
-    // 5. Append Season Totals Row
-    const label = (filterValue === 'all') ? "GRAND TOTAL:" : `${filterValue} TOTALS:`;
-    const totalRow = document.createElement('tr');
-    totalRow.className = 'total-row'; 
-    totalRow.innerHTML = `
-        <td colspan="2" style="text-align:right; font-weight:bold; color:var(--camo-accent);">${label}</td>
-        <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalDucks}</td>
-        <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalGeese}</td>
-        <td></td><td></td>
-    `;
-    fragment.appendChild(totalRow);
-
-    // 6. Final paint to the screen
-    historyBody.appendChild(fragment);
+  // 5. INJECT: Add everything to the screen in ONE go (Fastest)
+  historyBody.appendChild(fragment);
 }
 
 // Separate helper for clean code
