@@ -213,6 +213,24 @@ tbody tr:nth-child(even) {
     bottom: 0;
 }
 
+/* Restores the orange border and adds a subtle glow hint */
+#blindLocation {
+    border: 1.5px solid var(--safety-orange); /* Solid orange border */
+    box-shadow: 0 0 8px rgba(255, 121, 63, 0.15); /* Soft orange hint/glow */
+    background-color: var(--input-bg);
+    color: #fff;
+    transition: all 0.3s ease; /* Smooth transition for the glow */
+}
+
+/* Enhances the orange glow when the user clicks/taps the field */
+#blindLocation:focus {
+    outline: none;
+    border-color: var(--safety-orange);
+    box-shadow: 0 0 12px rgba(255, 121, 63, 0.4); /* Stronger orange glow on focus */
+    background-color: #2a3d50; /* Slightly lighter blue to show activity */
+}
+
+
 
 @media (max-width: 400px) {
     .expandable-cell {
