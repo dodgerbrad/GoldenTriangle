@@ -1,28 +1,46 @@
 /* --- 1. Outdoor/Hunting Color Palette (2026) --- */
 :root {
-    --marsh-bg: #1b211a;
-    --camo-accent: #5a7863;
-    --safety-orange: #ff793f;
-    --text-primary: #f6f0d7;
-    --border-soft: #2d3c59;
-    --input-bg: #213448;
+    --marsh-bg: #1b211a;      /* Deep forest/marsh background */
+    --camo-accent: #5a7863;   /* Muted sage green */
+    --safety-orange: #ff793f; /* High-visibility accent */
+    --text-primary: #f6f0d7;  /* Warm parchment text for low strain */
+    --border-soft: #2d3c59;   /* Subtle blue-gray borders */
+    --input-bg: #213448;      /* Deep blue for input fields */
 }
-
-/* Enables native pull-to-refresh & Notch Support */
+/* Enables native pull-to-refresh behavior */
 html, body {
     overscroll-behavior-y: contain; 
-    background-color: var(--marsh-bg);
+    /* Prevents the 'rubber band' effect on the whole page 
+       while allowing the refresh gesture at the top. */
+    
+    /* Optimized for the iPhone Notch / Dynamic Island */
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
 }
 
-::-webkit-scrollbar { display: none; }
+/* Hide scrollbars but keep functionality for a cleaner app look */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* App-style container */
+#box {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
 
 /* --- 2. Global Mobile & iOS Fixes --- */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--marsh-bg);
     color: var(--text-primary);
     margin: 0;
+    /* Respects iPhone notch and safe areas */
+    padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 15px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 15px);
     line-height: 1.6;
 }
 
@@ -30,9 +48,7 @@ body {
     width: 100%;
     max-width: 600px;
     margin: 0 auto;
-    padding: 20px;
-    padding-bottom: 80px; /* Space for iPhone home bar */
-    box-sizing: border-box;
+    padding-bottom: 50px;
 }
 
 h1 {
@@ -49,6 +65,8 @@ h1 {
     border-radius: 4px;
     text-shadow: 2px 2px 0px #000;
 }
+
+
 
 /* --- 3. Glove-Friendly Form Design --- */
 .form-section {
@@ -68,10 +86,18 @@ h1 {
     margin-bottom: 15px;
 }
 
+label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+/* Large touch targets for field use */
 input, select, textarea {
     width: 100%;
-    min-height: 48px;
-    font-size: 16px !important; /* Prevents iOS auto-zoom */
+    min-height: 48px; /* Standard 2026 touch target height */
+    font-size: 16px !important; /* Prevents iPhone auto-zoom */
     background-color: var(--input-bg);
     border: 1px solid var(--border-soft);
     border-radius: 8px;
@@ -81,57 +107,50 @@ input, select, textarea {
     box-sizing: border-box;
 }
 
+/* Side-by-side bird counts for quick entry */
 .input-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
 }
-/* Highlights required fields that are empty upon submission attempt */
-input:invalid, select:invalid {
-    border-left: 4px solid var(--safety-orange);
+
+.input-row label { margin-bottom: 0; }
+.input-row input { 
+    width: 80px; 
+    text-align: center;
+    margin-bottom: 0;
 }
-
-/* Optional: Subtle glow when the user is warned */
-input:invalid:focus, select:invalid:focus {
-    box-shadow: 0 0 8px rgba(255, 121, 63, 0.4);
-}
-/* Highlights empty required fields with a high-vis orange border */
-input:invalid, select:invalid {
-    border: 2px solid var(--safety-orange) !important;
-    background-color: rgba(255, 121, 63, 0.1);
-}
-
-
-
-.input-row input { width: 80px; text-align: center; margin-bottom: 0; }
 
 .btn-submit {
     width: 100%;
-    height: 56px;
+    height: 56px; /* Extra tall for gloves */
     background-color: var(--safety-orange);
     color: white;
     border: none;
     border-radius: 12px;
     font-size: 1.1rem;
     font-weight: bold;
+    cursor: pointer;
     box-shadow: 0 4px 15px rgba(255, 121, 63, 0.3);
 }
 
-/* --- 4. Harvest Table (Optimized for Safari 26) --- */
+.btn-submit:active {
+    transform: scale(0.98);
+}
+
+/* --- 4. Responsive Harvest Table --- */
 .table-container {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border-radius: 12px;
     border: 1px solid var(--border-soft);
-    position: relative;
 }
 
 table {
     width: 100%;
-    table-layout: fixed;
-    min-width: 600px;
+    min-width: 500px;
     border-collapse: collapse;
     background: #1e272e;
 }
@@ -149,61 +168,55 @@ td {
     padding: 12px;
     border-bottom: 1px solid var(--border-soft);
     font-size: 0.9rem;
-    overflow: hidden;
 }
 
-tbody tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.05); }
+/* Zebra striping for low-light legibility */
+tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.05);
+}
 
-#historyTable td:first-child { width: 85px; font-weight: bold; font-size: 12px; }
+* {
+    -webkit-tap-highlight-color: transparent; /* Removes the grey flicker on tap */
+}
 
-.expandable-cell {
-    width: 120px;
+#historyTable td:first-child {
+    min-width: 75px; /* Ensures 1/3/2026 doesn't wrap to two lines */
+    font-size: 12px;
+}
+
+/* Narrow, consistent cells for Weather and Notes */
+.expandable-cell, .notes-cell {
+    max-width: 70px;            /* Reduced from 150px to save more space */
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
+    text-overflow: ellipsis;    /* Keeps the "..." visible */
+    font-size: 0.8rem;
+    color: #a0a0a0;
     cursor: pointer;
-    color: var(--text-primary);
-    -webkit-user-select: none;
-    user-select: none;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.2); /* Visual hint it's clickable */
 }
 
-.total-row {
-    background-color: rgba(0, 0, 0, 0.4);
-    border-top: 2px solid var(--camo-accent);
-}
+/* Remove the :active state entirely to prevent the table row from jumping */
 
-/* --- 5. Native Modal (Fixes Safari Pop-up Bugs) --- */
-dialog {
-    border: 2px solid var(--safety-orange);
-    background: var(--input-bg);
-    color: var(--text-primary);
-    border-radius: 16px;
-    padding: 20px;
-    max-width: 85vw;
-    width: 300px;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
 
-dialog::backdrop {
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(4px);
+/* On tap/click, show the full note */
+.notes-cell:active {
+    white-space: normal;
+    overflow: visible;
 }
-
-#modalContent {
+/* Styling the final totals summary row */
+#totals-row {
+    background-color: var(--input-bg) !important; /* Dark background */
+    border-top: 2px solid var(--safety-orange);  /* Orange separator line */
     font-size: 1.1rem;
-    margin-bottom: 10px;
-    word-wrap: break-word;
+    position: sticky; /* Keeps the totals visible while you scroll the history */
+    bottom: 0;
 }
 
-.btn-close {
-    width: 100%;
-    padding: 12px;
-    background: var(--safety-orange);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
+
+@media (max-width: 400px) {
+    .expandable-cell {
+        max-width: 50px; /* Extremely narrow for small screens */
+        font-size: 0.75rem;
+    }
 }

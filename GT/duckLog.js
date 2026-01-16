@@ -60,48 +60,43 @@ form.addEventListener('submit', e => {
 // Function to fetch and display the history
 let allHunts = []; // Global store so we don't have to fetch every time we filter
 
-// 1. Updated loadHistory: Now only fetches and saves data
+// 1. Updated loadHistory: Sets default to current 2026 season
 function loadHistory() {
-    const historyBody = document.getElementById('historyBody');
-    const cacheBuster = `?t=${new Date().getTime()}`;
-    
-    fetch(scriptURL + cacheBuster, { method: "GET", redirect: "follow" })
-    .then(response => response.json())
-    .then(data => {
-      allHunts = data; 
-      // Sort Newest to Oldest
-      allHunts.sort((a, b) => new Date(b.huntDate) - new Date(a.huntDate));
+  const historyBody = document.getElementById('historyBody');
+  const cacheBuster = `?t=${new Date().getTime()}`;
   
-      // DYNAMICALLY BUILD DROPDOWN
-      const filter = document.getElementById('seasonFilter');
-      const seasons = [...new Set(allHunts.map(h => getSeason(h.huntDate)))];
-      
-      // Calculate current season string (e.g., "2025-2026")
-      const currentSeason = getSeason(new Date().toISOString());
+  fetch(scriptURL + cacheBuster, { method: "GET", redirect: "follow" })
+  .then(response => response.json())
+  .then(data => {
+    allHunts = data; 
+    allHunts.sort((a, b) => new Date(a.huntDate) - new Date(b.huntDate)); // Sort oldest to newest for totals
 
-      // Rebuild the menu
-      let options = '<option value="all">All Time (Grand Total)</option>';
-      seasons.sort().reverse().forEach(s => {
-          if(s !== "Invalid Date") {
-              options += `<option value="${s}">${s} Season</option>`;
-          }
-      });
-      filter.innerHTML = options;
-      
-       // --- THE FIX: Set dropdown to current season if it exists in data ---
-       if (seasons.includes(currentSeason)) {
-        filter.value = currentSeason;
-    } else {
-        // Fallback to the most recent season available if current has no data yet
-        filter.value = seasons.sort().reverse()[0] || "all";
-    }
-  
-      renderTable(allHunts, filter.value);
-  })
-    .catch(error => {
-        console.error('Error loading history:', error);
-        historyBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Failed to load logs.</td></tr>';
+    const filter = document.getElementById('seasonFilter');
+    const seasons = [...new Set(allHunts.map(h => getSeason(h.huntDate)))];
+    
+    // Rebuild the menu
+    let options = '<option value="all">All Time (Grand Total)</option>';
+    seasons.sort().reverse().forEach(s => {
+        if(s !== "Invalid Date") {
+            options += `<option value="${s}">${s} Season</option>`;
+        }
     });
+    filter.innerHTML = options;
+
+    // AUTO-SELECT CURRENT SEASON (2025-2026)
+    const currentSeasonStr = getSeason(new Date().toISOString());
+    if (seasons.includes(currentSeasonStr)) {
+        filter.value = currentSeasonStr;
+    } else {
+        filter.value = seasons[0] || "all"; // Default to most recent if current season empty
+    }
+
+    renderTable(allHunts, filter.value);
+})
+  .catch(error => {
+      console.error('Error loading history:', error);
+      historyBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Failed to load logs.</td></tr>';
+  });
 }
 
 function getSeason(dateString) {
@@ -146,64 +141,76 @@ function updateSeasonDropdown(hunts) {
 }
 
 
-// 3. New renderTable: Handles filtering and totals
+// Updated renderTable: Restores Modal Pop-up AND adds Totals Row
 function renderTable(hunts, filterValue) {
   const historyBody = document.getElementById('historyBody');
-  
-  // 1. CLEAR: Wipe the table
   historyBody.innerHTML = '';
   
-  // 2. FILTER: Get the subset of data
   const filteredData = (filterValue === 'all') 
       ? hunts 
       : hunts.filter(h => getSeason(h.huntDate) === filterValue);
 
-  if (filteredData.length === 0) {
-      historyBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No hunts found.</td></tr>';
-      return;
-  }
+  // We want newest at the top for the UI
+  const displayData = [...filteredData].sort((a,b) => new Date(b.huntDate) - new Date(a.huntDate));
 
-  // 3. FRAGMENT: Create a "virtual" container (2026 Best Practice)
-  const fragment = document.createDocumentFragment();
+  // Initialize Totals
   let totalDucks = 0;
   let totalGeese = 0;
 
-  filteredData.forEach(row => {
+  displayData.forEach(row => {
+      // Accumulate totals while rendering rows
       totalDucks += parseInt(row.ducks || 0);
       totalGeese += parseInt(row.geese || 0);
 
       const tr = document.createElement('tr');
       
-      // Ensure robust date display
-      const displayDate = formatDateForDisplay(row.huntDate);
+      // Robust Date Formatting for display
+      let displayDate = "N/A";
+      if (row.huntDate) {
+          const parts = row.huntDate.toString().split('T')[0].split('-');
+           if (parts.length === 3) {
+              // Formatting as M/D/YY
+              displayDate = `${parseInt(parts[1])}/${parseInt(parts[2])}/${parts[0].slice(-2)}`;
+          } else {
+              displayDate = row.huntDate;
+          }
+      }
 
       tr.innerHTML = `
-        <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
-        <td>${row.blindLocation || 'N/A'}</td>
-        <td style="text-align:center;">${row.ducks || 0}</td>
-        <td style="text-align:center;">${row.geese || 0}</td>
-        <td class="notes-cell">${row.weather || ''}</td>
-        <td class="notes-cell">${row.notes || ''}</td>
+          <td>${displayDate}</td>
+          <td>${row.blindLocation || 'N/A'}</td>
+          <td style="text-align:center;">${row.ducks || 0}</td>
+          <td style="text-align:center;">${row.geese || 0}</td>
+          <td class="expandable-cell">${row.weather || ''}</td>
+          <td class="expandable-cell">${row.notes || ''}</td>
       `;
-      fragment.appendChild(tr);
+
+      // Attach Modal Click Logic
+      tr.querySelectorAll('.expandable-cell').forEach(cell => {
+          cell.addEventListener('click', function() {
+              if (this.innerText.trim() === "") return;
+              const modal = document.getElementById('noteModal');
+              const content = document.getElementById('modalContent');
+              content.innerText = this.innerText;
+              modal.showModal();
+          });
+      });
+
+      historyBody.appendChild(tr);
   });
 
-  // 4. TOTALS: Add the season summary row
-  const totalRow = document.createElement('tr');
-  totalRow.className = 'total-row'; 
-  totalRow.innerHTML = `
-      <td colspan="2" style="text-align:right; font-weight:bold; color:var(--camo-accent);">
-        ${filterValue === 'all' ? "GRAND TOTAL" : filterValue + " TOTALS"}:
-      </td>
-      <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalDucks}</td>
-      <td style="text-align:center; font-weight:bold; color:#ff793f;">${totalGeese}</td>
-      <td></td><td></td>
+  // --- ADD THE TOTALS ROW BACK IN ---
+  const totalsRow = document.createElement('tr');
+  totalsRow.id = "totals-row"; // Add an ID for specific styling in CSS
+  totalsRow.innerHTML = `
+      <td colspan="2" style="font-weight:bold; color:var(--safety-orange);">TOTALS</td>
+      <td style="text-align:center; font-weight:bold; color:var(--safety-orange);">${totalDucks}</td>
+      <td style="text-align:center; font-weight:bold; color:var(--safety-orange);">${totalGeese}</td>
+      <td colspan="2"></td> <!-- Empty cells for notes/weather columns -->
   `;
-  fragment.appendChild(totalRow);
-
-  // 5. INJECT: Add everything to the screen in ONE go (Fastest)
-  historyBody.appendChild(fragment);
+  historyBody.appendChild(totalsRow);
 }
+
 
 // Separate helper for clean code
 function formatDateForDisplay(dateString) {
@@ -252,6 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 3. Initial load of the history table
   loadHistory();
 });
+
 
 
 
