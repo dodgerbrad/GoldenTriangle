@@ -1,267 +1,300 @@
-const scriptURL = 'https://script.google.com/macros/s/AKfycbw_-GIA33hvuZkHmY-3H3PK8xUGtkQDXZeRnoEny9LpjfvFRFD7GrJLLVEfKcLh3B0/exec'; // Paste your Deployment URL here
+const scriptURL = 'https://script.google.com/macros/s/AKfycbxK4yBRIrkGPSV2eqjKkE2UnpU5pu8Kaxt9VuIcnKXLzq0KX6uuxSmpN1Iz8WA42rmG/exec'; 
 const form = document.getElementById('huntForm');
 const submitButton = document.querySelector('.btn-submit');
 
+// --- 1. FORM SUBMISSION LOGIC ---
 form.addEventListener('submit', e => {
-  e.preventDefault();
+    e.preventDefault();
 
-  // 1. Capture form data into our unused const
-  const formData = new FormData(form);
-  const newEntry = Object.fromEntries(formData.entries());
+    // 1. Get the latest values directly from the inputs
+    const photoLinkValue = document.getElementById('photoLink').value;
+    const huntDate = document.getElementById('huntDate').value;
+    const blind = document.getElementById('blindLocation').value;
+    const ducks = document.getElementById('ducks').value;
+    const geese = document.getElementById('geese').value;
+    const weather = document.getElementById('weather').value;
+    const notes = document.getElementById('notes').value;
 
-  // 2. Visual feedback
-  submitButton.disabled = true;
-  submitButton.innerText = "Submitting...";
+    // 2. Safety Check: If a photo was taken but hasn't finished uploading
+    if (document.getElementById('photoCapture').files.length > 0 && !photoLinkValue) {
+        alert("Please wait for the photo to finish uploading (Look for the ✅ Ready message).");
+        return;
+    }
 
-  // 3. OPTIMISTIC UI: Add the row to the table immediately
-  const historyBody = document.getElementById('historyBody');
-  const tempRow = document.createElement('tr');
-  tempRow.id = "temp-row"; // ID to find/remove it later
-  tempRow.style.opacity = '0.5'; // Visual cue that it's "pending"
+    // 3. Visual feedback: Disable button
+    submitButton.disabled = true;
+    submitButton.innerText = "Submitting to Log...";
 
-  // Simple formatting for the immediate display
-  const displayDate = newEntry.huntDate.split('-').slice(1).join('/') + '/' + newEntry.huntDate.split('-')[0].slice(-2);
+    // 4. OPTIMISTIC UI: Add the row to the table immediately so the user sees it
+    const historyBody = document.getElementById('historyBody');
+    const tempRow = document.createElement('tr');
+    tempRow.id = "temp-row";
+    tempRow.style.opacity = '0.5';
 
-  tempRow.innerHTML = `
-      <td style="font-weight:bold; color:#f6f0d7;">${displayDate} (Pending...)</td>
-      <td>${newEntry.blindLocation}</td>
-      <td style="text-align:center;">${newEntry.ducks}</td>
-      <td style="text-align:center;">${newEntry.geese}</td>
-      <td class="notes-cell">${newEntry.weather}</td>
-      <td class="notes-cell">${newEntry.notes}</td>
-  `;
+    // Format date for the pending row
+    const displayDate = huntDate.split('-').slice(1).join('/') + '/' + huntDate.split('-')[0].slice(-2);
+    const photoPreview = photoLinkValue ? "📸 Uploading..." : "—";
 
-  // Insert at the top of the history
-  historyBody.prepend(tempRow);
+    tempRow.innerHTML = `
+      <td style="font-weight:bold; color:#f6f0d7;">${displayDate}</td>
+      <td>${blind}</td>
+      <td style="text-align:center;">${ducks}</td>
+      <td style="text-align:center;">${geese}</td>
+      <td style="text-align:center;">${photoPreview}</td>
+      <td class="notes-cell">${weather}</td>
+      <td class="notes-cell">${notes}</td>
+    `;
+    historyBody.prepend(tempRow);
 
-  // 4. Send to Google Sheets
-  fetch(scriptURL, { method: 'POST', body: formData })
-    .then(response => {
-      alert('Hunt Recorded Successfully!');
-      submitButton.disabled = false;
-      submitButton.innerText = "Submit Hunt to Log";
-      form.reset();
+    // 5. Build the data package for Google Sheets
+    // We use URLSearchParams because it is the most reliable format for Safari 2026
+    const params = new URLSearchParams();
+    params.append('huntDate', huntDate);
+    params.append('blindLocation', blind);
+    params.append('ducks', ducks);
+    params.append('geese', geese);
+    params.append('photoLink', photoLinkValue); // The ImgBB link
+    params.append('weather', weather);
+    params.append('notes', notes);
 
-      // Remove the "pending" row and refresh the full table
-      if (document.getElementById('temp-row')) {
-        document.getElementById('temp-row').remove();
-      }
-      loadHistory();
+    // 6. Send to Google Sheets
+    fetch(scriptURL, { 
+        method: 'POST', 
+        mode: 'no-cors', // Essential for Google Apps Script redirects
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params.toString() 
+    })
+    .then(() => {
+        // success (no-cors always assumes success if the network doesn't crash)
+        alert('Hunt Recorded Successfully!');
+        
+        // Reset the form and the photo UI
+        form.reset();
+        document.getElementById('photoPreviewBox').style.display = 'none';
+        document.getElementById('photoLink').value = ""; // Clear for next entry
+        
+        submitButton.disabled = false;
+        submitButton.innerText = "Submit Hunt to Log";
+
+        // Remove the "pending" row and refresh the actual data
+        if (document.getElementById('temp-row')) {
+            document.getElementById('temp-row').remove();
+        }
+        loadHistory();
     })
     .catch(error => {
-      alert('Error! Check signal. Your entry is still in the list for now.');
-      console.error('Submission Error:', error.message);
-      submitButton.disabled = false;
-      submitButton.innerText = "Submit Hunt to Log";
+        alert('Submission Failed. Check your cellular signal.');
+        console.error('Submission Error:', error);
+        
+        // Highlight the pending row as an error
+        if (document.getElementById('temp-row')) {
+            document.getElementById('temp-row').style.color = "red";
+            document.getElementById('temp-row').style.opacity = "1";
+        }
+        
+        submitButton.disabled = false;
+        submitButton.innerText = "Retry Submission";
     });
 });
 
 
-// Function to fetch and display the history
-let allHunts = []; // Global store so we don't have to fetch every time we filter
+// --- 2. DATA LOADING & FILTERING ---
+let allHunts = []; 
 
-// 1. Updated loadHistory: Sets default to current 2026 season
 function loadHistory() {
-  const historyBody = document.getElementById('historyBody');
-  const cacheBuster = `?t=${new Date().getTime()}`;
-  
-  fetch(scriptURL + cacheBuster, { method: "GET", redirect: "follow" })
-  .then(response => response.json())
-  .then(data => {
-    allHunts = data; 
-    allHunts.sort((a, b) => new Date(a.huntDate) - new Date(b.huntDate)); // Sort oldest to newest for totals
+    const historyBody = document.getElementById('historyBody');
+    const cacheBuster = `?t=${new Date().getTime()}`;
 
-    const filter = document.getElementById('seasonFilter');
-    const seasons = [...new Set(allHunts.map(h => getSeason(h.huntDate)))];
-    
-    // Rebuild the menu
-    let options = '<option value="all">All Time (Grand Total)</option>';
-    seasons.sort().reverse().forEach(s => {
-        if(s !== "Invalid Date") {
-            options += `<option value="${s}">${s} Season</option>`;
-        }
-    });
-    filter.innerHTML = options;
+    fetch(scriptURL + cacheBuster, { method: "GET", redirect: "follow" })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            // 1. Validate that we received an array of hunts
+            if (Array.isArray(data)) {
+                allHunts = data;
+                // Sort oldest to newest for totals calculation logic
+                allHunts.sort((a, b) => new Date(a.huntDate) - new Date(b.huntDate));
+            } else {
+                console.error("Received unexpected data format (not an array):", data);
+                allHunts = []; 
+            }
 
-    // AUTO-SELECT CURRENT SEASON (2025-2026)
-    const currentSeasonStr = getSeason(new Date().toISOString());
-    if (seasons.includes(currentSeasonStr)) {
-        filter.value = currentSeasonStr;
-    } else {
-        filter.value = seasons[0] || "all"; // Default to most recent if current season empty
-    }
+            // 2. Build the Season Filter dropdown
+            const filter = document.getElementById('seasonFilter');
+            const seasons = [...new Set(allHunts.map(h => getSeason(h.huntDate)))];
+            
+            let options = '<option value="all">All Time (Grand Total)</option>';
+            seasons.sort().reverse().forEach(s => {
+                if (s !== "Invalid Date" && s !== "Unknown") {
+                    options += `<option value="${s}">${s} Season</option>`;
+                }
+            });
+            filter.innerHTML = options;
 
-    renderTable(allHunts, filter.value);
-})
-  .catch(error => {
-      console.error('Error loading history:', error);
-      historyBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Failed to load logs.</td></tr>';
-  });
+            // 3. Auto-select the current 2025-2026 season
+            const currentSeasonStr = getSeason(new Date().toISOString());
+            if (seasons.includes(currentSeasonStr)) {
+                filter.value = currentSeasonStr;
+            } else {
+                filter.value = seasons[0] || "all";
+            }
+
+            // 4. Draw the table
+            renderTable(allHunts, filter.value);
+        })
+        .catch(error => {
+            console.error('Error loading history:', error);
+            historyBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Failed to load logs. Check your Spreadsheet ID.</td></tr>';
+        });
 }
 
 function getSeason(dateString) {
-  if (!dateString) return "Unknown";
-  
-  // Replace hyphens with slashes to prevent timezone "day-shift" bugs
-  const cleanDate = dateString.toString().split('T')[0].replace(/-/g, '/');
-  const date = new Date(cleanDate);
-  
-  if (isNaN(date.getTime())) return "Invalid Date";
-
-  const month = date.getMonth(); // 0 = Jan, 8 = Sept
-  const year = date.getFullYear();
-  
-  // September (8) to December (11) starts the season
-  // January (0) to August (7) is the second half of the previous year's season
-  const startYear = (month >= 8) ? year : year - 1;
-  return `${startYear}-${startYear + 1}`;
+    if (!dateString) return "Unknown";
+    const date = new Date(dateString.toString().split('T')[0].replace(/-/g, '/'));
+    if (isNaN(date.getTime())) return "Invalid Date";
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    const startYear = (month >= 8) ? year : year - 1;
+    return `${startYear}-${startYear + 1}`;
 }
 
-
-
-function updateSeasonDropdown(hunts) {
-  const filter = document.getElementById('seasonFilter');
-  const existingValue = filter.value; // Save what the user already picked
-  
-  // Find all unique seasons in the data
-  const seasons = [...new Set(hunts.map(h => getSeason(h.huntDate)))];
-  seasons.sort().reverse(); // Show newest seasons at the top
-
-  // Clear and rebuild the dropdown
-  filter.innerHTML = '<option value="all">All Time (Grand Total)</option>';
-  seasons.forEach(s => {
-      const option = document.createElement('option');
-      option.value = s;
-      option.textContent = `${s} Season`;
-      filter.appendChild(option);
-  });
-
-  // Restore the user's previous selection if it still exists
-  filter.value = existingValue || "all";
-}
-
-
-// Updated renderTable: Restores Modal Pop-up AND adds Totals Row
+// --- 3. TABLE RENDERING ---
 function renderTable(hunts, filterValue) {
-  const historyBody = document.getElementById('historyBody');
-  historyBody.innerHTML = '';
-  
-  const filteredData = (filterValue === 'all') 
-      ? hunts 
-      : hunts.filter(h => getSeason(h.huntDate) === filterValue);
+    const historyBody = document.getElementById('historyBody');
+    historyBody.innerHTML = '';
+    const filteredData = (filterValue === 'all') ? hunts : hunts.filter(h => getSeason(h.huntDate) === filterValue);
+    const displayData = [...filteredData].sort((a,b) => new Date(b.huntDate) - new Date(a.huntDate));
 
-  // We want newest at the top for the UI
-  const displayData = [...filteredData].sort((a,b) => new Date(b.huntDate) - new Date(a.huntDate));
+    let totalDucks = 0, totalGeese = 0;
 
-  // Initialize Totals
-  let totalDucks = 0;
-  let totalGeese = 0;
+    displayData.forEach(row => { 
+        totalDucks += parseInt(row.ducks || 0);
+        totalGeese += parseInt(row.geese || 0);
+     const photoCell = row.photoLink 
+    ? `<div class="thumb-container" onclick="window.open('${row.photoLink}', '_blank')">
+         <img src="${row.photoLink}" class="mini-thumb" alt="Harvest">
+         <div class="thumb-overlay">View</div>
+       </div>` 
+    : '—';
+        const tr = document.createElement('tr');
+        let d = row.huntDate ? row.huntDate.toString().split('T')[0].split('-') : null;
+        let displayDate = d ? `${parseInt(d[1])}/${parseInt(d[2])}/${d[0].slice(-2)}` : "N/A";
 
-  displayData.forEach(row => {
-      // Accumulate totals while rendering rows
-      totalDucks += parseInt(row.ducks || 0);
-      totalGeese += parseInt(row.geese || 0);
+        tr.innerHTML = `
+            <td>${displayDate}</td>
+            <td>${row.blindLocation || 'N/A'}</td>
+            <td style="text-align:center;">${row.ducks || 0}</td>
+            <td style="text-align:center;">${row.geese || 0}</td>
+            <td style="text-align:center;">${photoCell}</td>
+            <td class="expandable-cell">${row.weather || ''}</td>
+            <td class="expandable-cell">${row.notes || ''}</td>
+        `;
 
-      const tr = document.createElement('tr');
-      
-      // Robust Date Formatting for display
-      let displayDate = "N/A";
-      if (row.huntDate) {
-          const parts = row.huntDate.toString().split('T')[0].split('-');
-           if (parts.length === 3) {
-              // Formatting as M/D/YY
-              displayDate = `${parseInt(parts[1])}/${parseInt(parts[2])}/${parts[0].slice(-2)}`;
-          } else {
-              displayDate = row.huntDate;
-          }
-      }
+        tr.querySelectorAll('.expandable-cell').forEach(cell => {
+            cell.addEventListener('click', function() {
+                if (this.innerText.trim() === "") return;
+                document.getElementById('modalContent').innerText = this.innerText;
+                document.getElementById('noteModal').showModal();
+            });
+        });
+        historyBody.appendChild(tr);
+    });
 
-      tr.innerHTML = `
-          <td>${displayDate}</td>
-          <td>${row.blindLocation || 'N/A'}</td>
-          <td style="text-align:center;">${row.ducks || 0}</td>
-          <td style="text-align:center;">${row.geese || 0}</td>
-          <td class="expandable-cell">${row.weather || ''}</td>
-          <td class="expandable-cell">${row.notes || ''}</td>
-      `;
-
-      // Attach Modal Click Logic
-      tr.querySelectorAll('.expandable-cell').forEach(cell => {
-          cell.addEventListener('click', function() {
-              if (this.innerText.trim() === "") return;
-              const modal = document.getElementById('noteModal');
-              const content = document.getElementById('modalContent');
-              content.innerText = this.innerText;
-              modal.showModal();
-          });
-      });
-
-      historyBody.appendChild(tr);
-  });
-
-  // --- ADD THE TOTALS ROW BACK IN ---
-  const totalsRow = document.createElement('tr');
-  totalsRow.id = "totals-row"; // Add an ID for specific styling in CSS
-  totalsRow.innerHTML = `
-      <td colspan="2" style="font-weight:bold; color:var(--safety-orange);">TOTALS</td>
-      <td style="text-align:center; font-weight:bold; color:var(--safety-orange);">${totalDucks}</td>
-      <td style="text-align:center; font-weight:bold; color:var(--safety-orange);">${totalGeese}</td>
-      <td colspan="2"></td> <!-- Empty cells for notes/weather columns -->
-  `;
-  historyBody.appendChild(totalsRow);
+    const totalsRow = document.createElement('tr');
+    totalsRow.id = "totals-row"; 
+    totalsRow.innerHTML = `
+        <td colspan="2" style="font-weight:bold; color:orange;">TOTALS</td>
+        <td style="text-align:center; font-weight:bold; color:orange;">${totalDucks}</td>
+        <td style="text-align:center; font-weight:bold; color:orange;">${totalGeese}</td>
+        <td colspan="3"></td> 
+    `;
+    historyBody.appendChild(totalsRow);
 }
 
+// --- 4. PHOTO UPLOAD & RESIZING ---
+const photoInput = document.getElementById('photoCapture');
+const photoLinkInput = document.getElementById('photoLink');
+const previewImg = document.getElementById('imagePreview');
+const statusText = document.getElementById('uploadStatus');
 
-// Separate helper for clean code
-function formatDateForDisplay(dateString) {
-  const parts = dateString.toString().split('T')[0].split('-');
-  return parts.length === 3 ? `${parseInt(parts[1])}/${parseInt(parts[2])}/${parts[0].slice(-2)}` : dateString;
-}
+photoInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    statusText.innerText = "Processing...";
+
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200; 
+        let scale = Math.min(MAX_WIDTH / img.width, 1);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(async (blob) => {
+            statusText.innerText = "Uploading (Small Size)...";
+            const formData = new FormData();
+            formData.append('image', blob, "harvest.jpg");
+
+            try {
+                const apiKey = 'c35b3973813bbd067239a605b612f231';
+                
+                // FIXED URL: Including the path /1/upload, the ?key= and the ${} syntax
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    photoLinkInput.value = data.data.url;
+                    statusText.innerHTML = `✅ Ready: <a href="${data.data.url}" target="_blank">View Photo</a>`;
+                } else {
+                    statusText.innerText = "❌ API Error. Check Key.";
+                }
+            } catch (err) {
+                statusText.innerText = "❌ Network Error. Check URL.";
+                console.error("Detailed Error:", err);
+            }
+        }, 'image/jpeg', 0.7); // Closes toBlob
+    }; // Closes img.onload
+}); // Closes addEventListener
 
 
-// 5. Listener for when the user changes the dropdown
-document.getElementById('seasonFilter').addEventListener('change', (e) => {
-    renderTable(allHunts, e.target.value);
-});
 
+// --- 5. INITIALIZATION & UTILS ---
+document.getElementById('seasonFilter').addEventListener('change', (e) => renderTable(allHunts, e.target.value));
 
-
-// Automatically refresh data when the app is resumed
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    console.log("App resumed: Refreshing logs...");
-
-    // 1. Give the phone 300ms to reconnect to the cell tower
-    setTimeout(() => {
-      // 2. Call loadHistory which fetches fresh data and 
-      // re-renders the table with the current filter applied.
-      loadHistory();
-    }, 300);
-  }
+    if (document.visibilityState === "visible") {
+        setTimeout(() => loadHistory(), 300);
+    }
 });
 
-// Set the date input to 'Today' by default for faster entry
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Set the date input to 'Today'
-  const dateInput = document.getElementById('huntDate');
-  if (dateInput) {
-    // Correctly handles the YYYY-MM-DD format for 2026
-    dateInput.value = new Date().toISOString().split('T')[0];
-  }
+    const dateInput = document.getElementById('huntDate');
+    if (dateInput) {
+        // 1. Get current time in your local timezone (CST)
+        const now = new Date();
+        
+        // 2. Subtract the timezone offset so it doesn't jump to tomorrow
+        const offset = now.getTimezoneOffset() * 60000; 
+        const localISOTime = new Date(now - offset).toISOString().split('T')[0];
+        
+        // 3. Set the input to the correct LOCAL date (January 18)
+        dateInput.value = localISOTime;
+    }
 
-  // 2. Force numeric keypad for bird counts (Big UX improvement for mobile)
-  const ducksInput = document.getElementById('ducks');
-  const geeseInput = document.getElementById('geese');
+    // REMOVED the old UTC line from here!
 
-  if (ducksInput) ducksInput.setAttribute('inputmode', 'numeric');
-  if (geeseInput) geeseInput.setAttribute('inputmode', 'numeric');
-
-  // 3. Initial load of the history table
-  loadHistory();
+    if (document.getElementById('ducks')) document.getElementById('ducks').setAttribute('inputmode', 'numeric');
+    if (document.getElementById('geese')) document.getElementById('geese').setAttribute('inputmode', 'numeric');
+    
+    loadHistory();
 });
-
-
-
-
-// Initial load when page opens
-loadHistory();

@@ -14,6 +14,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Duck Log">
     <link rel="apple-touch-icon" href="GT-apple-touch.png">
+    <link rel="icon" type="image/png" href="GT.png">
 
     <!-- Link to your manifest (Remember the relative path fix!) -->
     <link rel="manifest" href="manifest.json">
@@ -58,6 +59,22 @@
                     <input type="number" id="geese" name="geese" min="0" value="0">
                 </div>
             </div>
+            <!-- Add this inside your <form id="huntForm">, perhaps before the Notes section -->
+            <div class="form-section">
+                <h3>Hunt Media</h3>
+                <label for="photoCapture">Take a Photo of the Harvest</label>
+                <!-- accept="image/*" filters for photos; capture="camera" opens the native camera -->
+                <input type="file" id="photoCapture" accept="image/*">
+
+                <!-- This hidden input will store the generated link to be submitted with the form -->
+                <input type="hidden" id="photoLink" name="photoLink">
+
+                <div id="photoPreviewBox" style="margin-top:10px; display:none;">
+                    <img id="imagePreview" src="" style="max-width:100%; border-radius:8px;">
+                    <p id="uploadStatus" style="font-size:0.8rem; color:#666;">Uploading to cloud...</p>
+                </div>
+            </div>
+
 
             <!-- 3. Notes Section -->
             <div class="form-section">
@@ -96,8 +113,10 @@
                         <th>Blind</th>
                         <th>Ducks</th>
                         <th>Geese</th>
+                        <th>Photo</th>
                         <th>Weather</th>
                         <th>Notes</th>
+                        
                     </tr>
                 </thead>
                 <tbody id="historyBody">
